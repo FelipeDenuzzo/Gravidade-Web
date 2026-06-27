@@ -8,16 +8,29 @@ const _mainCanvas = document.getElementById('gameCanvas');
 const _mainCtx    = _mainCanvas.getContext('2d');
 let   _mainBounds = { w: 0, h: 0, marginX: 0, marginY: 0 };
 
+// Retorna dimensões reais da área visível (desconta barras do browser mobile)
+function _getViewSize() {
+  if (window.visualViewport) {
+    return { w: window.visualViewport.width, h: window.visualViewport.height };
+  }
+  return { w: window.innerWidth, h: window.innerHeight };
+}
+
 function _redimensionar() {
-  _mainCanvas.width  = window.innerWidth;
-  _mainCanvas.height = window.innerHeight;
-  _mainBounds = { w: _mainCanvas.width, h: _mainCanvas.height, marginX: 0, marginY: 0 };
+  const { w, h } = _getViewSize();
+  _mainCanvas.width  = w;
+  _mainCanvas.height = h;
+  _mainBounds = { w, h, marginX: 0, marginY: 0 };
   if (!gameState.jogoAtivo) {
     player.x = _mainBounds.w / 2;
     player.y = _mainBounds.h / 4;
   }
 }
+
 window.addEventListener('resize', () => { _redimensionar(); _reinicializarFase(); });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => { _redimensionar(); _reinicializarFase(); });
+}
 _redimensionar();
 
 // ─── Background ───────────────────────────────────────────────
