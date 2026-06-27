@@ -9,57 +9,71 @@
 'use strict';
 
 const _videoEl = document.getElementById('videoOverlay');
-let   _introOnEnd = null;
 
-// Ouve o fim do vídeo
-_videoEl.addEventListener('ended', () => {
-  _videoEl.style.display = 'none';
-  _videoEl.src = '';
-  if (_introOnEnd) { const cb = _introOnEnd; _introOnEnd = null; cb(); }
-});
-
-// Caso o vídeo falhe (arquivo não encontrado), passa direto
-_videoEl.addEventListener('error', () => {
-  _videoEl.style.display = 'none';
-  _videoEl.src = '';
-  if (_introOnEnd) { const cb = _introOnEnd; _introOnEnd = null; cb(); }
-});
+// Token incremental: cada chamada a introPlayVideo gera um novo.
+// Listeners de eventos antigos ignoram tokens desatualizados.
+let _introToken = 0;
 
 // -------------------------------------------------------------
 // introPlayVideo(src, onEnd)
-// Equivale a mostrarTransicaoVideo() do Swift
 // -------------------------------------------------------------
 function introPlayVideo(src, onEnd) {
+  // Para qualquer reprodução anterior sem disparar callbacks
   introStop();
-  _introOnEnd = onEnd;
 
+  // Token desta chamada — callbacks de chamadas anteriores serão ignorados
+  const myToken = ++_introToken;
+
+  function _concluir() {
+    if (_introToken !== myToken) return; // chamada obsoleta, ignora
+    _videoEl.style.display = 'none';
+    _videoEl.removeAttribute('src');
+    _videoEl.load(); // reseta estado interno do elemento
+    if (onEnd) onEnd();
+  }
+
+  _videoEl.style.display  = 'block';
+  _videoEl.style.opacity  = '0';
+  _videoEl.style.transition = '';
   _videoEl.src = src;
-  _videoEl.style.display = 'block';
-  _videoEl.style.opacity = '0';
+
+  // Usa onended/onerror diretamente (sobrescreve, evita acumulo de listeners)
+  _videoEl.onended = _concluir;
+  _videoEl.onerror = _concluir; // arquivo não encontrado → passa direto
 
   const playPromise = _videoEl.play();
   if (playPromise) {
     playPromise
       .then(() => {
-        // Fade-in (equivale ao UIView.animate alpha:1 do Swift)
+        if (_introToken !== myToken) return;
         _videoEl.style.transition = 'opacity 0.25s';
         _videoEl.style.opacity    = '1';
       })
       .catch(() => {
-        // Autoplay bloqueado: pula o vídeo
-        _videoEl.style.display = 'none';
-        if (_introOnEnd) { const cb = _introOnEnd; _introOnEnd = null; cb(); }
+        // Autoplay bloqueado pelo browser → pula o vídeo
+        _concluir();
       });
   }
 }
 
 // -------------------------------------------------------------
 // introStop()
-// Equivale a pararVideoOverlay() do Swift
+// Para imediatamente SEM disparar callback de onEnd.
 // -------------------------------------------------------------
 function introStop() {
-  _videoEl.pause();
+  _introToken++; // invalida qualquer callback pendente
+
+  _videoEl.onended = null;
+  _videoEl.onerror = null;
+
+  if (!_videoEl.paused) {
+    // pause() só pode ser chamado após play() resolver
+    const p = _videoEl.play().catch(() => {});
+    Promise.resolve(p).then(() => _videoEl.pause()).catch(() => {});
+  }
+
   _videoEl.style.display = 'none';
-  _videoEl.src  = '';
-  _introOnEnd   = null;
+  _videoEl.style.opacity = '0';
+  _videoEl.removeAttribute('src');
+  _videoEl.load();
 }
