@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Gravidade</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Canvas principal do jogo -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Overlay de vídeo (intro, vitória, derrota) -->
+  <video id="videoOverlay" playsinline muted></video>
+
+  <!-- HUD: tempo, fase e botão sair -->
+  <div id="hud">
+    <span id="labelTempo">Tempo: 0s</span>
+    <span id="labelFase">Fase: 1</span>
+    <button id="btnSair">Sair</button>
+  </div>
+
+  <!-- Container de overlays (telas de menu, vitória, derrota, seletor de fase) -->
+  <div id="overlayContainer"></div>
+
+  <!-- Scripts (ordem importa) -->
+  <script src="js/GameState.js"></script>
+  <script src="js/PhaseManager.js"></script>
+  <script src="js/Physics.js"></script>
+  <script src="js/MagnetSystem.js"></script>
+  <script src="js/BlackHole.js"></script>
+  <script src="js/ItemFactory.js"></script>
+  <script src="js/HUD.js"></script>
+  <script src="js/OverlayManager.js"></script>
+  <script src="js/IntroSystem.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
