@@ -1,45 +1,26 @@
 // =============================================================
-// main.js
-// Equivalente a: GameViewController.swift
-//
-// Orquestra todos os sistemas:
-//   - Canvas + bounds
-//   - Acelerômetro
-//   - Loop de física (Physics.js)
-//   - Magnetos (MagnetSystem.js)
-//   - Buraco Negro (BlackHole.js)
-//   - Itens (ItemFactory.js)
-//   - HUD (HUD.js)
-//   - Overlays (OverlayManager.js)
-//   - Vídeo de intro (IntroSystem.js)
+// main.js  —  Equivalente a GameViewController.swift
 // =============================================================
-
 'use strict';
 
-// ─── Canvas ───────────────────────────────────────────────────
-const _canvas = document.getElementById('gameCanvas');
-const _ctx    = _canvas.getContext('2d');
-let   _bounds = { w: 0, h: 0, marginX: 0, marginY: 0 };
+// ─── Canvas ──────────────────────────────────────────────────
+const _mainCanvas = document.getElementById('gameCanvas');
+const _mainCtx    = _mainCanvas.getContext('2d');
+let   _mainBounds = { w: 0, h: 0, marginX: 0, marginY: 0 };
 
 function _redimensionar() {
-  _canvas.width  = window.innerWidth;
-  _canvas.height = window.innerHeight;
-  _bounds = {
-    w:       _canvas.width,
-    h:       _canvas.height,
-    marginX: 0,
-    marginY: 0,
-  };
+  _mainCanvas.width  = window.innerWidth;
+  _mainCanvas.height = window.innerHeight;
+  _mainBounds = { w: _mainCanvas.width, h: _mainCanvas.height, marginX: 0, marginY: 0 };
   if (!gameState.jogoAtivo) {
-    player.x = _bounds.w / 2;
-    player.y = _bounds.h / 4;
+    player.x = _mainBounds.w / 2;
+    player.y = _mainBounds.h / 4;
   }
 }
 window.addEventListener('resize', () => { _redimensionar(); _reinicializarFase(); });
 _redimensionar();
 
-// ─── Background por fase ──────────────────────────────────────
-// Tenta bg_faseN.png → fundo.jpg → cor sólida
+// ─── Background ───────────────────────────────────────────────
 const _bgImgs  = {};
 const _bgFundo = new Image();
 _bgFundo.src   = 'assets/fundo.jpg';
@@ -54,14 +35,13 @@ function _bgDaFase(fase) {
   return _bgImgs[key];
 }
 
-// ─── Vídeos de transição (nomes reais do repo Swift) ──────────
+// ─── Vídeos ──────────────────────────────────────────────────
 const VIDEO_VITORIA = 'assets/transivitoria.mp4';
 const VIDEO_DERROTA = 'assets/transiderrota.mp4';
 
-// ─── Inicializar fase ─────────────────────────────────────────
+// ─── Inicializar fase ────────────────────────────────────────
 function mainIniciarFase(numeroFase) {
   gameState.faseAtual = Math.max(1, Math.min(numeroFase, NUMERO_MAXIMO_FASES));
-
   const config = obterConfigFase(gameState.faseAtual);
 
   physicsReset();
@@ -72,14 +52,14 @@ function mainIniciarFase(numeroFase) {
   overlayLimparTodos();
   introStop();
 
-  player.x  = _bounds.w / 2;
-  player.y  = _bounds.h / 4;
+  player.x  = _mainBounds.w / 2;
+  player.y  = _mainBounds.h / 4;
   player.vx = player.vy = 0;
 
-  itemFactoryInit(_bounds);
-  magnetCriar(config, _bounds);
-  blackHoleCriar(config, _bounds, player.r);
-  itemsPopularFase(config, _bounds);
+  itemFactoryInit(_mainBounds);
+  magnetCriar(config, _mainBounds);
+  blackHoleCriar(config, _mainBounds, player.r);
+  itemsPopularFase(config, _mainBounds);
 
   gameState.jogoAtivo      = true;
   gameState.jogoPausado    = false;
@@ -91,11 +71,10 @@ function mainIniciarFase(numeroFase) {
   hudMostrar();
   hudBotaoSairAtivo(true);
   hudAtualizar();
-
   iniciarAcelerometro();
 
   physicsStop();
-  physicsInit(_canvas, _bounds, _onFrame);
+  physicsInit(_mainCanvas, _mainBounds, _onFrame);
   physicsStart();
 }
 
@@ -105,23 +84,19 @@ function _reinicializarFase() {
   blackHoleReset();
   physicsLimparObstaculos();
   const config = obterConfigFase(gameState.faseAtual);
-  itemFactoryInit(_bounds);
-  magnetCriar(config, _bounds);
-  blackHoleCriar(config, _bounds, player.r);
+  itemFactoryInit(_mainBounds);
+  magnetCriar(config, _mainBounds);
+  blackHoleCriar(config, _mainBounds, player.r);
 }
 
-// ─── Efeito de coleta de item ─────────────────────────────────
-// Equivale a ItemEffectHandler.handleCollection() do Swift
+// ─── Efeito de coleta ─────────────────────────────────────────
 function _efetivarColeta(item) {
   item.visible = false;
-
   switch (item.tipo) {
-
     case ITEM_TYPE.LARANJA_NORMAL:
     case ITEM_TYPE.LARANJA_IMPOSTOR:
       if (laranjasPendentes() === 0) _verificarCondicaoVitoria();
       break;
-
     case ITEM_TYPE.LARANJA_FALSA: {
       const qtd = item.meta.azuisGerados ?? 4;
       for (let i = 0; i < qtd; i++) {
@@ -131,28 +106,17 @@ function _efetivarColeta(item) {
       if (laranjasPendentes() === 0) _verificarCondicaoVitoria();
       break;
     }
-
     case ITEM_TYPE.AZUL_NORMAL:
     case ITEM_TYPE.AZUL_ESPECIAL:
-    case ITEM_TYPE.AZUL_FASE17:
-      _aplicarPenalidade(5);
-      break;
-
-    case ITEM_TYPE.AZUL_GERA4:
-      _aplicarPenalidade(5); _spawnAzuis(4);
-      break;
-
-    case ITEM_TYPE.AZUL_GERA8:
-      _aplicarPenalidade(5); _spawnAzuis(8);
-      break;
-
+    case ITEM_TYPE.AZUL_FASE17:   _aplicarPenalidade(5); break;
+    case ITEM_TYPE.AZUL_GERA4:    _aplicarPenalidade(5); _spawnAzuis(4); break;
+    case ITEM_TYPE.AZUL_GERA8:    _aplicarPenalidade(5); _spawnAzuis(8); break;
     case ITEM_TYPE.GANHA_TEMPO: {
       const seg = item.meta.segundos ?? 5;
       if (modoUsaTempo(gameState.modo)) gameState.tempoRestante += seg;
       else gameState.tempoDecorrido = Math.max(0, gameState.tempoDecorrido - seg);
       break;
     }
-
     case ITEM_TYPE.PERDE_TEMPO: {
       const seg = item.meta.segundos ?? 5;
       if (modoUsaTempo(gameState.modo))
@@ -168,14 +132,12 @@ function _spawnAzuis(qtd) {
     items.azuis.push(criarItem(ITEM_TYPE.AZUL_NORMAL, p.x, p.y, player.r));
   }
 }
-
 function _posAleatoria(r) {
   return {
-    x: _bounds.marginX + r + Math.random() * (_bounds.w - r * 2),
-    y: _bounds.marginY + r + Math.random() * (_bounds.h - r * 2),
+    x: _mainBounds.marginX + r + Math.random() * (_mainBounds.w - r * 2),
+    y: _mainBounds.marginY + r + Math.random() * (_mainBounds.h - r * 2),
   };
 }
-
 function _aplicarPenalidade(seg) {
   if (modoUsaTempo(gameState.modo))
     gameState.tempoRestante = Math.max(0, gameState.tempoRestante - seg);
@@ -183,19 +145,14 @@ function _aplicarPenalidade(seg) {
 
 // ─── Vitória ──────────────────────────────────────────────────
 function _verificarCondicaoVitoria() {
-  if (!gameState.jogoAtivo) return;
-  if (laranjasPendentes() > 0) return;
-
+  if (!gameState.jogoAtivo || laranjasPendentes() > 0) return;
   gameState.jogoAtivo = false;
   hudBotaoSairAtivo(false);
-
   const ultimaFase = gameState.faseAtual >= NUMERO_MAXIMO_FASES;
-
   introPlayVideo(VIDEO_VITORIA, () => {
     overlayMostrarVitoria({
       titulo:    ultimaFase ? '🎉 Parabéns!' : '✅ Fase concluída!',
-      mensagem:  ultimaFase
-        ? 'Você completou todas as fases!'
+      mensagem:  ultimaFase ? 'Você completou todas as fases!'
         : `Fase ${gameState.faseAtual} completada em ${Math.floor(gameState.tempoDecorrido)}s`,
       ultimaFase,
       onRepetir:        () => mainIniciarFase(gameState.faseAtual),
@@ -207,15 +164,11 @@ function _verificarCondicaoVitoria() {
   });
 }
 
-// ─── Fim de tempo ─────────────────────────────────────────────
+// ─── Fim de tempo ────────────────────────────────────────────
 function _verificarFimTempo() {
-  if (!gameState.jogoAtivo) return;
-  if (!modoUsaTempo(gameState.modo)) return;
-  if (gameState.tempoRestante > 0) return;
-
+  if (!gameState.jogoAtivo || !modoUsaTempo(gameState.modo) || gameState.tempoRestante > 0) return;
   gameState.jogoAtivo = false;
   hudBotaoSairAtivo(false);
-
   introPlayVideo(VIDEO_DERROTA, () => {
     overlayMostrarFimTempo({
       onTentarNovamente: () => mainIniciarFase(gameState.faseAtual),
@@ -227,10 +180,7 @@ function _verificarFimTempo() {
 
 // ─── Loop principal ───────────────────────────────────────────
 function _onFrame(dt) {
-  if (!gameState.jogoAtivo || gameState.jogoPausado) {
-    _render(); return;
-  }
-
+  if (!gameState.jogoAtivo || gameState.jogoPausado) { _render(); return; }
   if (modoUsaTempo(gameState.modo)) {
     gameState.tempoRestante  = Math.max(0, gameState.tempoRestante - dt);
     gameState.tempoDecorrido += dt;
@@ -238,47 +188,40 @@ function _onFrame(dt) {
   } else {
     gameState.tempoDecorrido += dt;
   }
-
   _checarColisoes();
   hudAtualizar();
   _render();
 }
 
-// ─── Colisão jogador × itens ──────────────────────────────────
+// ─── Colisões ────────────────────────────────────────────────
 function _checarColisoes() {
-  const todos = [
-    ...items.laranjas, ...items.falsas,
-    ...items.azuis,    ...items.azuisFase17,
-    ...items.ganhaTempo, ...items.perdeTempo,
-  ];
+  const todos = [...items.laranjas, ...items.falsas, ...items.azuis,
+                 ...items.azuisFase17, ...items.ganhaTempo, ...items.perdeTempo];
   for (const item of todos) {
     if (itemColideComJogador(item)) _efetivarColeta(item);
   }
 }
 
-// ─── Render ───────────────────────────────────────────────────
+// ─── Render ──────────────────────────────────────────────────
 function _render() {
-  const ctx = _ctx;
-  ctx.clearRect(0, 0, _canvas.width, _canvas.height);
-
-  // Tenta bg da fase → fundo.jpg → cor sólida
+  const ctx = _mainCtx;
+  ctx.clearRect(0, 0, _mainCanvas.width, _mainCanvas.height);
   const bgFase = _bgDaFase(gameState.faseAtual);
   if (bgFase.complete && bgFase.naturalWidth > 0) {
-    ctx.drawImage(bgFase, 0, 0, _canvas.width, _canvas.height);
+    ctx.drawImage(bgFase, 0, 0, _mainCanvas.width, _mainCanvas.height);
   } else if (_bgFundo.complete && _bgFundo.naturalWidth > 0) {
-    ctx.drawImage(_bgFundo, 0, 0, _canvas.width, _canvas.height);
+    ctx.drawImage(_bgFundo, 0, 0, _mainCanvas.width, _mainCanvas.height);
   } else {
     ctx.fillStyle = '#0a0a14';
-    ctx.fillRect(0, 0, _canvas.width, _canvas.height);
+    ctx.fillRect(0, 0, _mainCanvas.width, _mainCanvas.height);
   }
-
   magnetDraw(ctx);
   blackHoleDraw(ctx);
   itemsDrawAll(ctx);
   playerDraw(ctx);
 }
 
-// ─── Boot ─────────────────────────────────────────────────────
+// ─── Boot ──────────────────────────────────────────────────────
 (function boot() {
   hudInit();
   hudOcultar();
