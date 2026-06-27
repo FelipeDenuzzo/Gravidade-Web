@@ -288,4 +288,7 @@ function getConfig(fase) {
   return FASES_MANUAIS[fase] ?? autoConfig(fase) ?? faseConfig({ itensLaranja: 2 });
 }
 
+// Alias para compatibilidade com main.js
+const obterConfigFase = getConfig;
+
 const NUMERO_MAXIMO_FASES = 35;
