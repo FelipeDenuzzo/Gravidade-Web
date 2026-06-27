@@ -8,20 +8,16 @@
 </head>
 <body>
 
-  <!-- Canvas principal do jogo -->
   <canvas id="gameCanvas"></canvas>
-
-  <!-- Overlay de vídeo (intro, vitória, derrota) -->
   <video id="videoOverlay" playsinline muted></video>
 
-  <!-- HUD: tempo, fase e botão sair — começa oculto -->
+  <!-- HUD começa oculto -->
   <div id="hud" style="display:none">
     <span id="labelTempo">Tempo: 0s</span>
     <span id="labelFase">Fase: 1</span>
     <button id="btnSair">Sair</button>
   </div>
 
-  <!-- Container de overlays (telas de menu, vitória, derrota, seletor de fase) -->
   <div id="overlayContainer"></div>
 
   <!-- Scripts (ordem importa) -->
@@ -35,6 +31,14 @@
   <script src="js/OverlayManager.js"></script>
   <script src="js/IntroSystem.js"></script>
   <script src="js/main.js"></script>
+
+  <!-- Detector de erro global: mostra mensagem na tela se algo quebrar -->
+  <script>
+    window.addEventListener('error', function(e) {
+      document.body.innerHTML += '<div style="position:fixed;top:0;left:0;right:0;background:red;color:#fff;padding:16px;font-size:14px;z-index:9999;white-space:pre-wrap">' +
+        '\u274c ERRO JS: ' + e.message + '\n' + (e.filename || '') + ':' + e.lineno + '</div>';
+    });
+  </script>
 
 </body>
 </html>
