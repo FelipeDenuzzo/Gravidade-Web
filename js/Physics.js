@@ -39,6 +39,9 @@ const gravity = { x: 0, y: 0 };
 // Gravidade anterior (para cálculo de delta rolagem)
 let lastGravityX = 0;
 
+// Flag: indica se o acelerômetro real está ativo
+let _acelerometroAtivo = false;
+
 // Referência ao canvas + bounds do labírinto
 let _canvas = null;
 let _bounds = { w: 0, h: 0, marginX: 0, marginY: 0 };
@@ -72,6 +75,8 @@ function _registrarOrientacao() {
 
 function _onOrientation(e) {
   if (!gameState.jogoAtivo || gameState.jogoPausado) return;
+  // Só marca como ativo se receber dados reais (não zero)
+  if (e.gamma !== null || e.beta !== null) _acelerometroAtivo = true;
   // gamma = inclinação lateral (-90..90) → eixo X
   // beta  = inclinação frente/trás (-180..180) → eixo Y
   // Normaliza para range -1..1
@@ -86,8 +91,20 @@ window.addEventListener('keyup',   e => { _keys[e.key] = false; });
 
 function _gravityFromKeyboard() {
   const s = 0.6;
-  gravity.x = (_keys['ArrowRight'] || _keys['d'] ? s : 0) - (_keys['ArrowLeft'] || _keys['a'] ? s : 0);
-  gravity.y = (_keys['ArrowDown']  || _keys['s'] ? s : 0) - (_keys['ArrowUp']   || _keys['w'] ? s : 0);
+  const kx = (_keys['ArrowRight'] || _keys['d'] ? s : 0) - (_keys['ArrowLeft'] || _keys['a'] ? s : 0);
+  const ky = (_keys['ArrowDown']  || _keys['s'] ? s : 0) - (_keys['ArrowUp']   || _keys['w'] ? s : 0);
+
+  if (_acelerometroAtivo) return; // acelerômetro tem prioridade
+
+  if (kx !== 0 || ky !== 0) {
+    // Teclado pressionado: usa teclado
+    gravity.x = kx;
+    gravity.y = ky;
+  } else {
+    // Desktop sem teclado nem acelerômetro: gravidade padrão para baixo
+    gravity.x = 0;
+    gravity.y = 0.5;
+  }
 }
 
 // -------------------------------------------------------------
@@ -109,6 +126,7 @@ function physicsReset() {
   player.angle = player.angularVelocity = 0;
   gravity.x = gravity.y = 0;
   lastGravityX = 0;
+  _acelerometroAtivo = false;
 }
 
 // -------------------------------------------------------------
@@ -129,7 +147,7 @@ function _loop(timestamp) {
   _lastTime = timestamp;
 
   if (gameState.jogoAtivo && !gameState.jogoPausado) {
-    _gravityFromKeyboard(); // no-op em mobile (gravity já vem do acelerômetro)
+    _gravityFromKeyboard();
     _step(dt);
   }
 
