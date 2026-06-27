@@ -27,11 +27,13 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true   # ativa o Pages via API se ainda não estiver ativo
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .   # raiz do repo (onde está o index.html)
+          path: .
 
       - name: Deploy
         id: deploy
